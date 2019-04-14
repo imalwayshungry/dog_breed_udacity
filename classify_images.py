@@ -23,6 +23,9 @@
 # Imports classifier function for using CNN to classify images 
 from classifier import classifier 
 from get_pet_labels import get_pet_labels
+from get_input_args import get_input_args
+from decimal import getcontext, Decimal
+import time
 # TODO 3: Define classify_images function below, specifically replace the None
 #       below by the function definition of the classify_images function. 
 #       Notice that this function doesn't return anything because the 
@@ -68,30 +71,138 @@ def classify_images(images_dir, results_dic, model):
            None - results_dic is mutable data type so no return needed.         
     """
 
-fh = open('dognames.txt', 'r')
-dog_namez = fh.read()
-fh.close()
+def do_predictions(models, target_tuple):
+    for model_name in models:
+        correct_preds = 0
+        false_preds = 0
+        for xx in target_tuple:
+            predict_from_model = classifier(img_path + "/" + xx[0], model_name)
+            temper = xx[1].split(" ")
+            prediction_truth = "False"
+            for local_xx in temper:
+                if local_xx in predict_from_model:
+                    prediction_truth = "True"
+            for local_xx in temper:
+                if local_xx.capitalize() in predict_from_model:
+                    prediction_truth = "True"
+            print "Identified Dog Pic: " + xx[
+                0] + " Prediction: " + predict_from_model + " Predic Success: " + prediction_truth
+            if prediction_truth == "False":
+                false_preds += 1
+            if prediction_truth == "True":
+                correct_preds += 1
+        print "\n"
+        print "Model: " + model_name + " Correct Predictions: " + str(correct_preds) + " False Predictions: " + str(
+            false_preds)
+        print "Percentage of Accuracy: "
+        image_count = len(target_tuple)
+        percent = Decimal(correct_preds) / Decimal(image_count)
+        print "Total Images: " + str(image_count) + " Accuracy of Prediction Percentage: " + "{:.2%}".format(percent)
+
+
+argz_present = False
+
+argz = get_input_args()
+
+if len(argz):
+    argz_present = True
+
+if argz_present: #***default actions if no command line args provided!
+
+    try:
+        dogfile = argz["dogfile"]
+    except:
+        pass
+
+    try:
+        arch = argz["arch"]
+    except:
+        pass
+
+    try:
+        pet_images = argz["pet_images"]
+    except:
+        pass
+
+if argz_present == False:
+    fh = open('dognames.txt', 'r')
+    dog_namez = fh.read()
+    fh.close()
+
+    image_dir = "pet_images"
+    model_name = "alexnet"
+    img_path = image_dir
+
+if argz_present:
+    try:
+        fh = open(dogfile, 'r')
+        dog_namez = fh.read()
+        fh.close()
+
+        image_dir = pet_images
+        model_name = arch
+        img_path = image_dir
+        print "Command Line Args: " + "image dir: " + image_dir + " model name: " + model_name + " file: " + dogfile
+
+    except Exception as e:
+        import sys
+        print "ERROR: Problem With Command Line Arguments"
+        sys.exit(1)
 
 my_dog_images_dict = {}
-
-image_dir = "pet_images"
 
 type_tuple = get_pet_labels(image_dir)
 
 doggie_tuple = []
+not_doggie_tuple = []
 
-dog_namez = dog_namez.replace(",", "")
+dog_namez = dog_namez.replace(",", "")  #contains list with broken up dog names!
 dog_namez = dog_namez.split("\n")
-
-dog_namez_list = []
 
 for x in type_tuple:
     if x not in doggie_tuple:
             if x[1] in dog_namez:
                 print "Dog Name Label Found: " + x[2]
-                doggie_tuple.append(x)
+                doggie_tuple.append(x)      #identified dog names in file dir
+
+print "\n"
+
+for x in type_tuple:
+    if x not in doggie_tuple:
+        print "Non Dog Label: " + x[2]
+        not_doggie_tuple.append(x)  #identified not dog names in file dir
+
+print "\n"
 
 print "SUCCESS: Dog Names Identified"
 
 for xx in doggie_tuple:
     print "Identified Dog Pic: " + xx[0]
+
+print "-------"
+print "PREDICTIONS OF DOG LABELS"
+print "-------"
+
+print "Number of Images: " + str(len(doggie_tuple))
+
+models = []
+
+if argz_present == False:  #***IF no CL args just scan with all models!
+    models.append("resnet")
+    models.append("alexnet")
+    models.append("vgg")
+
+if argz_present:
+    models.append(model_name)
+
+start = time.time()
+print "Predictions with Dog Images: " + "\n"
+do_predictions(models, doggie_tuple)
+end = time.time()
+print "Time Taken for Prediction of Dog Images: " + str(end - start)
+
+start = time.time()
+print "Predictions with Non Dog Images: " + "\n"
+do_predictions(models, not_doggie_tuple)
+end = time.time()
+print "Time Taken for Prediction of Non Dog Images: " + str(end - start)

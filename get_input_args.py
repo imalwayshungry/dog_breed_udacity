@@ -44,11 +44,15 @@ def get_input_args():
     import sys
 
     argument_dict = {}
-
     throttle = 0
     for i in sys.argv:
         if "--dir" == i:
-            da_image_dir = sys.argv[throttle + 1]
-        throttle += 1
+            argument_dict["pet_images"] = sys.argv[throttle + 1]
 
-    return None
+        if "--dogfile" == i:
+            argument_dict["dogfile"] = sys.argv[throttle + 1]
+
+        if "--arch" == i:
+            argument_dict["arch"] = sys.argv[throttle + 1]
+        throttle += 1
+    return argument_dict
