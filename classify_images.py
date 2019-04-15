@@ -126,13 +126,12 @@ def do_predictions(models, target_tuple, is_dog, results_class, doggie_namez):
                 print ("Classifier Predicted A Doggie: " + predict_from_model)
             else:
                 print ("Classifier Predicted Not A Doggie: " + predict_from_model)
-        print ("\n")
         print ("Model: " + model_name + " Correct Predictions: " + str(correct_preds) + " False Predictions: " + str(
             false_preds))
-        print ("Percentage of Accuracy: ")
         image_count = len(target_tuple)
         percent = Decimal(correct_preds) / Decimal(image_count)
         print ("Total Images: " + str(image_count) + " Accuracy of Prediction Percentage: " + "{:.2%}".format(percent))
+        print ("\n")
 
 argz_present = False
 
@@ -164,7 +163,6 @@ if argz_present == False:  #***default configurations
     fh.close()
 
     image_dir = "pet_images"
-    model_name = "alexnet"
     img_path = image_dir
 
 if argz_present:
@@ -236,6 +234,10 @@ print ("Predictions with Dog Images: " + "\n")
 do_predictions(models, doggie_tuple, 1, results_class, dog_namez)
 end = time.time()
 print ("Time Taken for Prediction of Dog Images: " + str(end - start))
+
+print ("-------")
+print ("PREDICTIONS OF NON DOG LABELS")
+print ("-------")
 
 start = time.time()
 print ("Predictions with Non Dog Images: " + "\n")
