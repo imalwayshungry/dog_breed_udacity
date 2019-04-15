@@ -158,7 +158,7 @@ if argz_present: #***default actions if no command line args provided!
     except:
         pass
 
-if argz_present == False:
+if argz_present == False:  #***default configurations
     fh = open('dognames.txt', 'r')
     dog_namez = fh.read()
     fh.close()
