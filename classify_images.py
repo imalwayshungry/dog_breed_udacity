@@ -26,6 +26,7 @@ from get_pet_labels import get_pet_labels
 from get_input_args import get_input_args
 from decimal import getcontext, Decimal
 import time
+from calculates_results_stats import calculates_results_stats
 # TODO 3: Define classify_images function below, specifically replace the None
 #       below by the function definition of the classify_images function. 
 #       Notice that this function doesn't return anything because the 
@@ -71,34 +72,67 @@ def classify_images(images_dir, results_dic, model):
            None - results_dic is mutable data type so no return needed.         
     """
 
-def do_predictions(models, target_tuple):
+def contains_word(s, w):
+    return (' ' + w + ' ') in (' ' + s + ' ')
+
+def do_predictions(models, target_tuple, is_dog, results_class, doggie_namez):
     for model_name in models:
         correct_preds = 0
         false_preds = 0
         for xx in target_tuple:
+            results_list = []  #***new list struct for each image!
             predict_from_model = classifier(img_path + "/" + xx[0], model_name)
             temper = xx[1].split(" ")
+            results_list.append(xx[1]) #***record actual image label
             prediction_truth = "False"
+            is_dog_predict = False
             for local_xx in temper:
                 if local_xx in predict_from_model:
                     prediction_truth = "True"
             for local_xx in temper:
                 if local_xx.capitalize() in predict_from_model:
                     prediction_truth = "True"
-            print "Identified Dog Pic: " + xx[
-                0] + " Prediction: " + predict_from_model + " Predic Success: " + prediction_truth
+            if prediction_truth == "True":
+                results_list.append(1) #***a prediction match!
+            else:
+                results_list.append(0) #***NOT A prediction match!
+
+            temper2 = predict_from_model.split(" ")
+            for local_xx in temper2:
+                for dog_name_ind in doggie_namez:
+                    if contains_word(dog_name_ind, local_xx.lower()):
+                        is_dog_predict = True
+
+            results_list.append(is_dog) #***IS PICTURE an actual doggie?
+            if is_dog_predict:
+                results_list.append(1)
+            else:
+                results_list.append(0)
+
+            if is_dog:
+                report_s = "Identified Dog Pic: "
+            else:
+                report_s = "Identified Non Dog Pic: "
+            print (report_s + xx[
+                0] + " Prediction: " + predict_from_model + " Predic Success: " + prediction_truth)
             if prediction_truth == "False":
                 false_preds += 1
+                results_list.append(0) #***record bad prediction
             if prediction_truth == "True":
                 correct_preds += 1
-        print "\n"
-        print "Model: " + model_name + " Correct Predictions: " + str(correct_preds) + " False Predictions: " + str(
-            false_preds)
-        print "Percentage of Accuracy: "
+                results_list.append(1) #***record good prediction
+            results_class.add_stats(xx[0], results_list)  # ***RECORD OUR STATS in dict per project requirements!
+            if is_dog_predict:
+                print ("Classifier Predicted A Doggie: " + predict_from_model)
+            else:
+                print ("Classifier Predicted Not A Doggie: " + predict_from_model)
+        print ("\n")
+        print ("Model: " + model_name + " Correct Predictions: " + str(correct_preds) + " False Predictions: " + str(
+            false_preds))
+        print ("Percentage of Accuracy: ")
         image_count = len(target_tuple)
         percent = Decimal(correct_preds) / Decimal(image_count)
-        print "Total Images: " + str(image_count) + " Accuracy of Prediction Percentage: " + "{:.2%}".format(percent)
-
+        print ("Total Images: " + str(image_count) + " Accuracy of Prediction Percentage: " + "{:.2%}".format(percent))
 
 argz_present = False
 
@@ -142,16 +176,16 @@ if argz_present:
         image_dir = pet_images
         model_name = arch
         img_path = image_dir
-        print "Command Line Args: " + "image dir: " + image_dir + " model name: " + model_name + " file: " + dogfile
+        print ("Command Line Args: " + "image dir: " + image_dir + " model name: " + model_name + " file: " + dogfile)
 
     except Exception as e:
         import sys
-        print "ERROR: Problem With Command Line Arguments"
+        print ("ERROR: Problem With Command Line Arguments")
         sys.exit(1)
 
 my_dog_images_dict = {}
 
-type_tuple = get_pet_labels(image_dir)
+type_tuple = get_pet_labels(image_dir)  #***type tuple contains actual image labels
 
 doggie_tuple = []
 not_doggie_tuple = []
@@ -162,28 +196,28 @@ dog_namez = dog_namez.split("\n")
 for x in type_tuple:
     if x not in doggie_tuple:
             if x[1] in dog_namez:
-                print "Dog Name Label Found: " + x[2]
+                print ("Dog Name Label Found: " + x[2])
                 doggie_tuple.append(x)      #identified dog names in file dir
 
 print "\n"
 
 for x in type_tuple:
     if x not in doggie_tuple:
-        print "Non Dog Label: " + x[2]
+        print ("Non Dog Label: " + x[2])
         not_doggie_tuple.append(x)  #identified not dog names in file dir
 
-print "\n"
+print ("\n")
 
-print "SUCCESS: Dog Names Identified"
+print ("SUCCESS: Dog Names Identified")
 
 for xx in doggie_tuple:
-    print "Identified Dog Pic: " + xx[0]
+    print ("Identified Dog Pic: " + xx[0])
 
-print "-------"
-print "PREDICTIONS OF DOG LABELS"
-print "-------"
+print ("-------")
+print ("PREDICTIONS OF DOG LABELS")
+print ("-------")
 
-print "Number of Images: " + str(len(doggie_tuple))
+print ("Number of Images: " + str(len(doggie_tuple)))
 
 models = []
 
@@ -195,14 +229,16 @@ if argz_present == False:  #***IF no CL args just scan with all models!
 if argz_present:
     models.append(model_name)
 
-start = time.time()
-print "Predictions with Dog Images: " + "\n"
-do_predictions(models, doggie_tuple)
-end = time.time()
-print "Time Taken for Prediction of Dog Images: " + str(end - start)
+results_class = calculates_results_stats()
 
 start = time.time()
-print "Predictions with Non Dog Images: " + "\n"
-do_predictions(models, not_doggie_tuple)
+print ("Predictions with Dog Images: " + "\n")
+do_predictions(models, doggie_tuple, 1, results_class, dog_namez)
 end = time.time()
-print "Time Taken for Prediction of Non Dog Images: " + str(end - start)
+print ("Time Taken for Prediction of Dog Images: " + str(end - start))
+
+start = time.time()
+print ("Predictions with Non Dog Images: " + "\n")
+do_predictions(models, not_doggie_tuple,0, results_class, dog_namez)
+end = time.time()
+print ("Time Taken for Prediction of Non Dog Images: " + str(end - start))
